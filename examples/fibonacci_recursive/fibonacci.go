@@ -70,7 +70,7 @@ func printReducer(results []withtheflow.FlowResult, args []byte) ([]byte, error)
 
 func initStep(args []byte, flowHandle withtheflow.FlowHandle) ([]byte, error) {
 	argsData := &fibonacci.FibStepArg{}
-	argsData.Index = 4
+	argsData.Index = 20
 
 	args, _ = proto.Marshal(argsData)
 
@@ -102,9 +102,9 @@ func main() {
 		fmt.Println(err)
 	}
 
-	graph, err := workflow.GenerateDotGraph()
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(graph)
+	// graph, err := workflow.GenerateDotGraph()
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	// fmt.Println(graph)
 }

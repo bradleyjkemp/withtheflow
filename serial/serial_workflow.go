@@ -1,7 +1,6 @@
 package serial
 
 import (
-	"fmt"
 	"github.com/bradleyjkemp/withtheflow"
 	"github.com/bradleyjkemp/withtheflow/serial/proto/flow"
 	"github.com/golang/protobuf/ptypes"
@@ -116,12 +115,9 @@ func (w *workflow) isBlocked(flow *flow.FlowConfig) bool {
 
 // updates status of a delayed result and returns bool whether it is still delayed
 func (w *workflow) checkResultDelayed(flow *flow.FlowConfig) bool {
-	fmt.Printf("Checking %s for delayed results\n", flow.Name)
 	if !flow.DelayedResult {
 		return false
 	}
-
-	fmt.Println("Result is delayed")
 
 	// when a result is delayed DependentIds contains the Id of the FlowReducer
 	blockedFlow := w.flowConfigs[flow.DependentIds[0]]
