@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+message Data {
+    int64 nMinus1 = 1;
+    int64 n = 2;
+    int64 index = 3;
+}
+
+message Result {
+    int64 index = 1;
+    int64 n = 2;
+}
