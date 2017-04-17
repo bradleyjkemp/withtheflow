@@ -1,0 +1,19 @@
+The 5th fibonacci number is 5
+digraph workflow {
+  id0 [label="start"]
+  id1 [label="init"]
+  id2 [label="fibStep"]
+  id3 [label="fibStep"]
+  id4 [label="fibStep"]
+  id5 [label="fibStep"]
+  id6 [label="fibStep"]
+  id7 [label="printStep"]
+  id1->id0
+  id2->id0
+  id3->id0
+  id4->id0
+  id5->id0
+  id6->id0
+  id7->id0
+}
+

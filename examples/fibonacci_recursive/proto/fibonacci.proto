@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+message FibStepArg {
+    int64 index = 1;
+}
+
+message Result {
+    int64 n = 1;
+}
