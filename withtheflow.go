@@ -1,43 +1,66 @@
 package withtheflow
 
-type FlowId int64
+var flowIdCounter int64
 
-type FlowCall struct {
-	FlowName  string
-	Arguments []byte
+// type FlowId int64
+
+// type FlowConfig struct {
+// 	Id             FlowId
+// 	HandlerName    string
+// 	Arguments      interface{}
+// 	DependentFlows []FlowId
+// }
+
+type FlowHandler func(args interface{}, runtime Runtime, subFlowResults []interface{}) interface{}
+
+type Runtime interface {
+	// Schedules a new flow to be executed
+	AddFlow(funcname string, args interface{}) int64
+	// Schedules a new flow which combines the results of the given flow ids.
+	CombineFlows(funcname string, args interface{}, flowIds ...int64) int64
+	// Sets the result of this flow to be the result of the given flow id (once it has finished executing)
+	DeferredResult(int64) interface{}
 }
 
-type FlowReducerCall struct {
-	FlowReducerName string
-	Arguments       []byte
-	DependentFlows  []FlowId
+type WorkflowRunner interface {
+	Run(funcname string, args interface{}) interface{}
 }
 
-type FlowResult struct {
-	FlowName string
-	Result   []byte
-}
+// func CreateFlow(funcname string, args interface{}) *FlowConfig {
+// 	return &FlowConfig{
+// 		Id:          FlowId(atomic.AddInt64(&flowIdCounter, 1)),
+// 		HandlerName: funcname,
+// 		Arguments:   args,
+// 	}
+// }
 
-// Takes a serialised proto and returns a serialised proto
-type FlowHandler func([]byte, FlowHandle) ([]byte, error)
+// func CombineFlows(funcname string, args interface{}, dependentFlows ...FlowId) *FlowConfig {
+// 	flowConfig := CreateFlow(funcname, args)
+// 	flowConfig.DependentFlows = dependentFlows
 
-// Takes a serialised proto and returns a serialised proto
-type DependentFlowHandler func([]FlowResult, []byte, FlowHandle) ([]byte, error)
+// 	return flowConfig
+// }
 
-// Takes a slice of serialised flow results,
-type FlowReducer func([]FlowResult, []byte) ([]byte, error)
+// // Takes a serialised proto and returns a serialised proto
+// type FlowHandler func([]byte, FlowHandle) ([]byte, error)
 
-type Workflow interface {
-	NewFlow(FlowCall) (FlowId, error)
-	Run() error
-	GenerateDotGraph() (string, error)
-}
+// // Takes a serialised proto and returns a serialised proto
+// type DependentFlowHandler func([]FlowResult, []byte, FlowHandle) ([]byte, error)
 
-type FlowHandle interface {
-	// Schedules the given FlowCall for execution
-	NewFlow(FlowCall) (FlowId, error)
+// // Takes a slice of serialised flow results,
+// type FlowReducer func([]FlowResult, []byte) ([]byte, error)
 
-	// Schedules a FlowCall which will be called with an array of the results of the given dependent flows
-	// and the return value of the current flow will be set to that of the given flow reducer
-	NewBlockedResult(FlowReducerCall) (FlowId, error)
-}
+// type Workflow interface {
+// 	NewFlow(FlowCall) (FlowId, error)
+// 	Run() error
+// 	GenerateDotGraph() (string, error)
+// }
+
+// type FlowHandle interface {
+// 	// Schedules the given FlowCall for execution
+// 	NewFlow(FlowCall) (FlowId, error)
+
+// 	// Schedules a FlowCall which will be called with an array of the results of the given dependent flows
+// 	// and the return value of the current flow will be set to that of the given flow reducer
+// 	NewBlockedResult(FlowReducerCall) (FlowId, error)
+// }
