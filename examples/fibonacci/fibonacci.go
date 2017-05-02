@@ -1,4 +1,4 @@
-package workflow
+package fibonacci
 
 import (
 	"github.com/bradleyjkemp/withtheflow"
@@ -17,7 +17,7 @@ func addStep(_ interface{}, runtime withtheflow.Runtime, subResults []interface{
 	for _, arg := range subResults {
 		total.Add(total, arg.(*big.Int))
 	}
-	
+
 	// sleep so that most of the "work" is done in the flow handler rather than the flow runner
 	time.Sleep(100 * time.Millisecond)
 	return total
