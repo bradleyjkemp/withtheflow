@@ -14,10 +14,8 @@ var flowIdCounter int64
 type FlowHandler func(args interface{}, runtime Runtime, subFlowResults []interface{}) interface{}
 
 type Runtime interface {
-	// Schedules a new flow to be executed
-	AddFlow(funcname string, args interface{}) int64
 	// Schedules a new flow which combines the results of the given flow ids.
-	CombineFlows(funcname string, args interface{}, flowIds ...int64) int64
+	AddFlow(funcname string, args interface{}, dependentFlows ...int64) int64
 	// Sets the result of this flow to be the result of the given flow id (once it has finished executing)
 	DeferredResult(int64) interface{}
 }
