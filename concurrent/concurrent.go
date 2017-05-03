@@ -46,7 +46,7 @@ func (w *workflow) Run(funcname string, args interface{}) interface{} {
 	runtime := &workflowRuntime{w}
 	id := runtime.AddFlow(funcname, args)
 
-	return runtime.getResult(id)
+	return runtime.getResult(id.(int64))
 }
 
 func (w *workflowRuntime) createFlow() int64 {
@@ -90,19 +90,18 @@ func (w *workflowRuntime) setDeferredResult(flowId int64, deferredId int64) {
 	w.resultsMutex.Unlock()
 }
 
-func (w *workflowRuntime) AddFlow(funcname string, args interface{}, dependentIds ...int64) int64 {
+func (w *workflowRuntime) AddFlow(funcname string, args interface{}, dependentIds ...withtheflow.FlowId) withtheflow.FlowId {
 	flowId := w.createFlow()
 
 	go func() {
 		var results []interface{}
-		for _, id := range dependentIds {
-			results = append(results, w.getResult(id))
+		for _, flowId := range dependentIds {
+			results = append(results, w.getResult(flowId.(int64)))
 		}
 
 		w.executionSlots <- executionToken{}
 		result := w.handlers[funcname](args, w, results)
 
-		// if result is of type deferredResult
 		if r, ok := result.(deferredResult); ok {
 			w.setDeferredResult(flowId, r.deferredId)
 		} else {
@@ -114,6 +113,6 @@ func (w *workflowRuntime) AddFlow(funcname string, args interface{}, dependentId
 	return flowId
 }
 
-func (w *workflowRuntime) DeferredResult(deferredId int64) interface{} {
-	return deferredResult{deferredId}
+func (w *workflowRuntime) DeferredResult(deferredId withtheflow.FlowId) interface{} {
+	return deferredResult{deferredId.(int64)}
 }
