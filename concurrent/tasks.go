@@ -1,7 +1,6 @@
 package concurrent
 
 import (
-	"fmt"
 	"github.com/bradleyjkemp/withtheflow"
 )
 
@@ -14,33 +13,45 @@ type flowTask struct {
 	dependentIds []withtheflow.FlowId
 }
 
-func setupInfiniteChannel(in chan struct{}, out chan struct{}) {
+func setupInfiniteChannel(inChan chan struct{}, outChan chan struct{}) {
+	var slots int
+	in := inChan
+	out := outChan
 	go func() {
 		for {
-			out <- <-in
+			if slots == 0 {
+				out = nil
+			} else {
+				out = outChan
+			}
+
+			select {
+			case <-in:
+				slots++
+			case out <- struct{}{}:
+				slots--
+			}
 		}
 	}()
 }
 
 func (w *workflowRuntime) pushTask(task *flowTask) {
-	// 	fmt.Println("Pushing")
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
 	w.addStackSlot <- struct{}{}
 	w.jobStack = append(w.jobStack, task)
 	stackSize++
-	fmt.Printf("Pushed %d\n", stackSize)
 }
 
 func (w *workflowRuntime) popTask() *flowTask {
 	w.mutex.Lock()
 	stackSize--
-	fmt.Printf("Popped %d\n", stackSize)
 	defer w.mutex.Unlock()
 
 	stackSize := len(w.jobStack)
 	task := w.jobStack[stackSize-1]
 	w.jobStack = w.jobStack[:stackSize-1]
+
 	return task
 }

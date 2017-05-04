@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	STACK_SIZE = 4
+	STACK_BUFFER_SIZE = 10
 )
 
 var flowIdCounter int64
@@ -46,8 +46,8 @@ func NewWorkflow(handlers map[string]withtheflow.FlowHandler, concurrency int) w
 		handlers:       handlers,
 		results:        make(map[int64]*flowResult),
 		executionSlots: make(chan struct{}, concurrency),
-		addStackSlot:   make(chan struct{}, STACK_SIZE),
-		getStackSlot:   make(chan struct{}, STACK_SIZE),
+		addStackSlot:   make(chan struct{}, STACK_BUFFER_SIZE),
+		getStackSlot:   make(chan struct{}, STACK_BUFFER_SIZE),
 	}
 	setupInfiniteChannel(w.addStackSlot, w.getStackSlot)
 
