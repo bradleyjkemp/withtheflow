@@ -1,6 +1,7 @@
 package concurrent
 
 import (
+	"context"
 	"github.com/bradleyjkemp/withtheflow"
 )
 
@@ -13,7 +14,7 @@ type flowTask struct {
 	dependentIds []withtheflow.FlowId
 }
 
-func setupInfiniteChannel(inChan chan struct{}, outChan chan struct{}) {
+func setupInfiniteChannel(ctx context.Context, inChan chan struct{}, outChan chan struct{}) {
 	var slots int
 	in := inChan
 	out := outChan
@@ -26,6 +27,8 @@ func setupInfiniteChannel(inChan chan struct{}, outChan chan struct{}) {
 			}
 
 			select {
+			case <-ctx.Done():
+				return
 			case <-in:
 				slots++
 			case out <- struct{}{}:

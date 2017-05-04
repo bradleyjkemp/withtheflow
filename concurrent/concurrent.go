@@ -13,15 +13,20 @@ const (
 
 var flowIdCounter int64
 
+type workerContext struct {
+	ctx    context.Context
+	cancel context.CancelFunc
+}
+
 type workflow struct {
-	handlers         map[string]withtheflow.FlowHandler
-	results          map[int64]*flowResult
-	mutex            sync.Mutex
-	executionSlots   chan struct{}
-	jobStack         []*flowTask
-	addStackSlot     chan struct{}
-	getStackSlot     chan struct{}
-	workerCancelFunc context.CancelFunc
+	handlers       map[string]withtheflow.FlowHandler
+	results        map[int64]*flowResult
+	mutex          sync.Mutex
+	executionSlots chan struct{}
+	jobStack       []*flowTask
+	addStackSlot   chan struct{}
+	getStackSlot   chan struct{}
+	context        workerContext
 }
 
 type flowResult struct {
@@ -49,7 +54,6 @@ func NewWorkflow(handlers map[string]withtheflow.FlowHandler, concurrency int) w
 		addStackSlot:   make(chan struct{}, STACK_BUFFER_SIZE),
 		getStackSlot:   make(chan struct{}, STACK_BUFFER_SIZE),
 	}
-	setupInfiniteChannel(w.addStackSlot, w.getStackSlot)
 
 	return w
 }
@@ -57,19 +61,23 @@ func NewWorkflow(handlers map[string]withtheflow.FlowHandler, concurrency int) w
 func (w *workflow) Run(funcname string, args interface{}) interface{} {
 	runtime := &workflowRuntime{w}
 	ctx, cancel := context.WithCancel(context.Background())
-	w.workerCancelFunc = cancel
+	w.context = workerContext{ctx, cancel}
+
+	setupInfiniteChannel(w.context.ctx, w.addStackSlot, w.getStackSlot)
 
 	for i := 0; i < cap(w.executionSlots); i++ {
-		runtime.spawnWorker(ctx)
+		runtime.spawnWorker(w.context.ctx)
 	}
 
 	id := runtime.AddFlow(funcname, args)
 
-	return runtime.getResult(id.(int64))
+	result := runtime.getResult(id.(int64))
+	w.closeWorkers()
+	return result
 }
 
-func (w *workflow) Close() {
-	w.workerCancelFunc()
+func (w *workflow) closeWorkers() {
+	w.context.cancel()
 }
 
 func (w *workflowRuntime) createFlow() int64 {
