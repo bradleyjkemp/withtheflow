@@ -1,4 +1,6 @@
 language: go
+env:
+  - GOMAXPROCS=4
 before_install:
   - go get github.com/mattn/goveralls
 script:
