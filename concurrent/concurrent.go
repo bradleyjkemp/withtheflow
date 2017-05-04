@@ -1,20 +1,27 @@
 package concurrent
 
 import (
+	"context"
 	"github.com/bradleyjkemp/withtheflow"
 	"sync"
 	"sync/atomic"
 )
 
-type executionToken struct{}
+const (
+	STACK_SIZE = 4
+)
 
 var flowIdCounter int64
 
 type workflow struct {
-	handlers       map[string]withtheflow.FlowHandler
-	results        map[int64]*flowResult
-	resultsMutex   sync.Mutex
-	executionSlots chan executionToken
+	handlers         map[string]withtheflow.FlowHandler
+	results          map[int64]*flowResult
+	mutex            sync.Mutex
+	executionSlots   chan struct{}
+	jobStack         []*flowTask
+	addStackSlot     chan struct{}
+	getStackSlot     chan struct{}
+	workerCancelFunc context.CancelFunc
 }
 
 type flowResult struct {
@@ -35,18 +42,34 @@ type deferredResult struct {
 }
 
 func NewWorkflow(handlers map[string]withtheflow.FlowHandler, concurrency int) withtheflow.WorkflowRunner {
-	return &workflow{
+	w := &workflow{
 		handlers:       handlers,
 		results:        make(map[int64]*flowResult),
-		executionSlots: make(chan executionToken, concurrency),
+		executionSlots: make(chan struct{}, concurrency),
+		addStackSlot:   make(chan struct{}, STACK_SIZE),
+		getStackSlot:   make(chan struct{}, STACK_SIZE),
 	}
+	setupInfiniteChannel(w.addStackSlot, w.getStackSlot)
+
+	return w
 }
 
 func (w *workflow) Run(funcname string, args interface{}) interface{} {
 	runtime := &workflowRuntime{w}
+	ctx, cancel := context.WithCancel(context.Background())
+	w.workerCancelFunc = cancel
+
+	for i := 0; i < cap(w.executionSlots); i++ {
+		runtime.spawnWorker(ctx)
+	}
+
 	id := runtime.AddFlow(funcname, args)
 
 	return runtime.getResult(id.(int64))
+}
+
+func (w *workflow) Close() {
+	w.workerCancelFunc()
 }
 
 func (w *workflowRuntime) createFlow() int64 {
@@ -54,18 +77,20 @@ func (w *workflowRuntime) createFlow() int64 {
 	result.waiter.Add(1)
 	flowId := atomic.AddInt64(&flowIdCounter, 1)
 
-	w.resultsMutex.Lock()
+	w.mutex.Lock()
 	w.results[flowId] = result
-	w.resultsMutex.Unlock()
+	w.mutex.Unlock()
 
 	return flowId
 }
 
 func (w *workflowRuntime) getResult(flowId int64) interface{} {
-	w.resultsMutex.Lock()
+	w.mutex.Lock()
 	result := w.results[flowId]
-	w.resultsMutex.Unlock()
+	w.mutex.Unlock()
 	result.waiter.Wait()
+
+	w.deleteResult(flowId)
 
 	if result.deferredResult != 0 {
 		return w.getResult(result.deferredResult)
@@ -74,42 +99,37 @@ func (w *workflowRuntime) getResult(flowId int64) interface{} {
 	return result.result
 }
 
-func (w *workflowRuntime) setResult(flowId int64, flowResult interface{}) {
-	w.resultsMutex.Lock()
-	result := w.results[flowId]
-	result.result = flowResult
-	result.waiter.Done()
-	w.resultsMutex.Unlock()
+func (w *workflowRuntime) deleteResult(flowId int64) {
+	w.mutex.Lock()
+	// A result can only ever be read once so, now that we've read it,
+	// delete it from the map to limit memory usage
+	delete(w.results, flowId)
+	w.mutex.Unlock()
 }
 
-func (w *workflowRuntime) setDeferredResult(flowId int64, deferredId int64) {
-	w.resultsMutex.Lock()
+func (w *workflowRuntime) setResult(flowId int64, flowResult interface{}) {
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+
 	result := w.results[flowId]
-	result.deferredResult = deferredId
+	if r, ok := flowResult.(deferredResult); ok {
+		result.deferredResult = r.deferredId
+	} else {
+		result.result = flowResult
+	}
 	result.waiter.Done()
-	w.resultsMutex.Unlock()
 }
 
 func (w *workflowRuntime) AddFlow(funcname string, args interface{}, dependentIds ...withtheflow.FlowId) withtheflow.FlowId {
 	flowId := w.createFlow()
 
-	go func() {
-		var results []interface{}
-		for _, flowId := range dependentIds {
-			results = append(results, w.getResult(flowId.(int64)))
-		}
-
-		w.executionSlots <- executionToken{}
-		result := w.handlers[funcname](args, w, results)
-
-		if r, ok := result.(deferredResult); ok {
-			w.setDeferredResult(flowId, r.deferredId)
-		} else {
-			w.setResult(flowId, result)
-		}
-		<-w.executionSlots
-	}()
-
+	job := &flowTask{
+		flowId:       flowId,
+		funcname:     funcname,
+		args:         args,
+		dependentIds: dependentIds,
+	}
+	w.pushTask(job)
 	return flowId
 }
 

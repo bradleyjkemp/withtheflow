@@ -4,7 +4,6 @@ import (
 	"github.com/bradleyjkemp/withtheflow"
 	"github.com/bradleyjkemp/withtheflow/concurrent"
 	"math/big"
-	"time"
 )
 
 const (
@@ -19,7 +18,7 @@ func addStep(_ interface{}, runtime withtheflow.Runtime, subResults []interface{
 	}
 
 	// sleep so that most of the "work" is done in the flow handler rather than the flow runner
-	time.Sleep(100 * time.Millisecond)
+	//time.Sleep(100 * time.Millisecond)
 	return total
 }
 

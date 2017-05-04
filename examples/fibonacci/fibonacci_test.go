@@ -7,6 +7,7 @@ import (
 )
 
 func TestBaseCases(t *testing.T) {
+	t.Log("oh hello")
 	result := CalculateFibonacci(1, 1)
 	assert.Equal(t, big.NewInt(1), result)
 
@@ -15,21 +16,26 @@ func TestBaseCases(t *testing.T) {
 }
 
 func TestIndex3(t *testing.T) {
+	t.Log("hi there")
 	result := CalculateFibonacci(3, 1)
 	assert.Equal(t, big.NewInt(2), result)
 }
 
-func TestIndex10(t *testing.T) {
-	result := CalculateFibonacci(10, 1)
-	assert.Equal(t, big.NewInt(55), result)
-}
+// func TestIndex10(t *testing.T) {
+// 	result := CalculateFibonacci(10, 1)
+// 	assert.Equal(t, big.NewInt(55), result)
+// }
 
-func TestIndex10Parallel(t *testing.T) {
-	result := CalculateFibonacci(10, 4)
-	assert.Equal(t, big.NewInt(55), result)
-}
+// func TestIndex10Parallel(t *testing.T) {
+// 	result := CalculateFibonacci(10, 4)
+// 	assert.Equal(t, big.NewInt(55), result)
+// }
 
-func TestIndex10MassivelyParallel(t *testing.T) {
-	result := CalculateFibonacci(10, 100)
-	assert.Equal(t, big.NewInt(55), result)
-}
+// func TestIndex10MassivelyParallel(t *testing.T) {
+// 	result := CalculateFibonacci(10, 100)
+// 	assert.Equal(t, big.NewInt(55), result)
+// }
+
+// func TestMemory(t *testing.T) {
+// 	CalculateFibonacci(20, 100)
+// }
