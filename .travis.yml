@@ -2,4 +2,5 @@ language: go
 before_install:
   - go get github.com/mattn/goveralls
 script:
+  - go test -v -cpu 1,2,4 ./...
   - $HOME/gopath/bin/goveralls -service=travis-ci -v -flags "-cpu 1,2,4"
