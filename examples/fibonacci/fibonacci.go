@@ -2,7 +2,6 @@ package fibonacci
 
 import (
 	"github.com/bradleyjkemp/withtheflow"
-	"github.com/bradleyjkemp/withtheflow/concurrent"
 	"math/big"
 )
 
@@ -17,13 +16,12 @@ func addStep(_ interface{}, runtime withtheflow.Runtime, subResults []interface{
 		total.Add(total, arg.(*big.Int))
 	}
 
-	// sleep so that most of the "work" is done in the flow handler rather than the flow runner
-	//time.Sleep(100 * time.Millisecond)
 	return total
 }
 
 func fibStep(arg interface{}, runtime withtheflow.Runtime, _ []interface{}) interface{} {
 	index := arg.(int)
+
 	if index == 1 || index == 2 {
 		return big.NewInt(1)
 	} else {
@@ -36,9 +34,9 @@ func fibStep(arg interface{}, runtime withtheflow.Runtime, _ []interface{}) inte
 	}
 }
 
-func CalculateFibonacci(index int, concurrency int) *big.Int {
-	return concurrent.NewWorkflow(map[string]withtheflow.FlowHandler{
+func CalculateFibonacci(runner withtheflow.WorkflowRunner, index int) *big.Int {
+	return runner.SetFlowHandlers(map[string]withtheflow.FlowHandler{
 		FIB_STEP: fibStep,
 		ADD_STEP: addStep,
-	}, concurrency).Run(FIB_STEP, index).(*big.Int)
+	}).Run(FIB_STEP, index).(*big.Int)
 }

@@ -13,5 +13,6 @@ type Runtime interface {
 }
 
 type WorkflowRunner interface {
+	SetFlowHandlers(map[string]FlowHandler) WorkflowRunner
 	Run(funcname string, args interface{}) interface{}
 }

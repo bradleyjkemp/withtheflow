@@ -46,15 +46,19 @@ type deferredResult struct {
 	deferredId int64
 }
 
-func NewWorkflow(handlers map[string]withtheflow.FlowHandler, concurrency int) withtheflow.WorkflowRunner {
+func NewRunner(concurrency int) withtheflow.WorkflowRunner {
 	w := &workflow{
-		handlers:       handlers,
 		results:        make(map[int64]*flowResult),
 		executionSlots: make(chan struct{}, concurrency),
 		addStackSlot:   make(chan struct{}, STACK_BUFFER_SIZE),
 		getStackSlot:   make(chan struct{}, STACK_BUFFER_SIZE),
 	}
 
+	return w
+}
+
+func (w *workflow) SetFlowHandlers(handlers map[string]withtheflow.FlowHandler) withtheflow.WorkflowRunner {
+	w.handlers = handlers
 	return w
 }
 
