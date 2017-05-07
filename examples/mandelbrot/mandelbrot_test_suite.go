@@ -2,10 +2,10 @@ package mandelbrot
 
 import (
 	"bytes"
-	"github.com/bradleyjkemp/withtheflow/concurrent"
+	"github.com/bradleyjkemp/withtheflow"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 	"math/cmplx"
-	"testing"
 )
 
 // Adapted from rosettacode.org/wiki/Mandelbrot_set#Go
@@ -38,8 +38,19 @@ func convertToAscii(in [][]bool) string {
 	return output.String()
 }
 
-func TestImage(t *testing.T) {
-	boolActual := GenerateMandelbrot(concurrent.NewRunner(1), 80, 40)
+type MandelbrotTestSuite struct {
+	suite.Suite
+	runner func() withtheflow.WorkflowRunner
+}
+
+func (s *MandelbrotTestSuite) TestImage() {
+	boolActual := GenerateMandelbrot(s.runner(), 80, 40)
 	boolExpected := referenceGenerator()
-	assert.Equal(t, boolExpected, boolActual)
+	assert.Equal(s.T(), boolExpected, boolActual)
+}
+
+func CreateTestSuite(runner func() withtheflow.WorkflowRunner) *MandelbrotTestSuite {
+	testSuite := new(MandelbrotTestSuite)
+	testSuite.runner = runner
+	return testSuite
 }

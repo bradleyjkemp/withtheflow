@@ -4,18 +4,25 @@ import (
 	"github.com/bradleyjkemp/withtheflow"
 	"github.com/bradleyjkemp/withtheflow/concurrent"
 	"github.com/bradleyjkemp/withtheflow/examples/fibonacci"
+	"github.com/bradleyjkemp/withtheflow/examples/mandelbrot"
 	"github.com/stretchr/testify/suite"
 	"testing"
 )
 
-func TestConcurrentFibonacci1Thread(t *testing.T) {
-	suite.Run(t, fibonacci.CreateFibonacciTestSuite(func() withtheflow.WorkflowRunner { return concurrent.NewRunner(1) }))
+var threadTests = []int{1, 2, 100}
+
+func runnerFactory(concurrency int) func() withtheflow.WorkflowRunner {
+	return func() withtheflow.WorkflowRunner { return concurrent.NewRunner(concurrency) }
 }
 
-func TestConcurrentFibonacci2Threads(t *testing.T) {
-	suite.Run(t, fibonacci.CreateFibonacciTestSuite(func() withtheflow.WorkflowRunner { return concurrent.NewRunner(2) }))
+func TestConcurrentFibonacci(t *testing.T) {
+	for _, concurrency := range threadTests {
+		suite.Run(t, fibonacci.CreateTestSuite(runnerFactory(concurrency)))
+	}
 }
 
-func TestConcurrentFibonacci100Threads(t *testing.T) {
-	suite.Run(t, fibonacci.CreateFibonacciTestSuite(func() withtheflow.WorkflowRunner { return concurrent.NewRunner(100) }))
+func TestConcurrentMandelbrot(t *testing.T) {
+	for _, concurrency := range threadTests {
+		suite.Run(t, mandelbrot.CreateTestSuite(runnerFactory(concurrency)))
+	}
 }
