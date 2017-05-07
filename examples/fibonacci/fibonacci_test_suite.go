@@ -30,7 +30,7 @@ func (s *FibonacciTestSuite) TestIndex10() {
 	assert.Equal(s.T(), big.NewInt(55), result)
 }
 
-func CreateFibonacciTestSuite(runner func() withtheflow.WorkflowRunner) *FibonacciTestSuite {
+func CreateTestSuite(runner func() withtheflow.WorkflowRunner) *FibonacciTestSuite {
 	testSuite := new(FibonacciTestSuite)
 	testSuite.runner = runner
 	return testSuite
