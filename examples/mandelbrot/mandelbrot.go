@@ -11,7 +11,7 @@ const (
 	GENERATOR     = "generateMandelbrot"
 	X_MIN         = -2.0
 	X_MAX         = -2.0 + 80*0.0315
-	Y_MIN         = 1 - 41*0.05
+	Y_MIN         = -1
 	Y_MAX         = 1
 	ITERATIONS    = 50
 )
