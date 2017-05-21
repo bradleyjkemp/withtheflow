@@ -3,6 +3,7 @@ package concurrent
 import (
 	"context"
 	"github.com/bradleyjkemp/withtheflow"
+	"github.com/bradleyjkemp/withtheflow/taskqueue"
 	"sync"
 	"sync/atomic"
 )
@@ -13,6 +14,12 @@ const (
 
 var flowIdCounter int64
 
+type flowTask struct {
+	funcname     string
+	args         interface{}
+	dependentIds []withtheflow.FlowId
+}
+
 type workerContext struct {
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -21,11 +28,10 @@ type workerContext struct {
 type workflow struct {
 	handlers       map[string]withtheflow.FlowHandler
 	results        map[int64]*flowResult
+	tasks          map[int64]*flowTask
 	mutex          sync.Mutex
 	executionSlots chan struct{}
-	jobStack       []*flowTask
-	addStackSlot   chan struct{}
-	getStackSlot   chan struct{}
+	idQueue        taskqueue.IdQueue
 	context        workerContext
 }
 
@@ -49,9 +55,8 @@ type deferredResult struct {
 func NewRunner(concurrency int) withtheflow.WorkflowRunner {
 	w := &workflow{
 		results:        make(map[int64]*flowResult),
+		tasks:          make(map[int64]*flowTask),
 		executionSlots: make(chan struct{}, concurrency),
-		addStackSlot:   make(chan struct{}, STACK_BUFFER_SIZE),
-		getStackSlot:   make(chan struct{}, STACK_BUFFER_SIZE),
 	}
 
 	return w
@@ -67,7 +72,7 @@ func (w *workflow) Run(funcname string, args interface{}) interface{} {
 	ctx, cancel := context.WithCancel(context.Background())
 	w.context = workerContext{ctx, cancel}
 
-	setupInfiniteChannel(w.context.ctx, w.addStackSlot, w.getStackSlot)
+	w.idQueue = taskqueue.CreateIdQueue(w.context.ctx)
 
 	for i := 0; i < cap(w.executionSlots); i++ {
 		runtime.spawnWorker(w.context.ctx)
@@ -113,10 +118,11 @@ func (w *workflowRuntime) getResult(flowId int64) interface{} {
 
 func (w *workflowRuntime) deleteResult(flowId int64) {
 	w.mutex.Lock()
+	defer w.mutex.Unlock()
+
 	// A result can only ever be read once so, now that we've read it,
 	// delete it from the map to limit memory usage
 	delete(w.results, flowId)
-	w.mutex.Unlock()
 }
 
 func (w *workflowRuntime) setResult(flowId int64, flowResult interface{}) {
@@ -136,12 +142,15 @@ func (w *workflowRuntime) AddFlow(funcname string, args interface{}, dependentId
 	flowId := w.createFlow()
 
 	job := &flowTask{
-		flowId:       flowId,
 		funcname:     funcname,
 		args:         args,
 		dependentIds: dependentIds,
 	}
-	w.pushTask(job)
+
+	w.mutex.Lock()
+	defer w.mutex.Unlock()
+	w.tasks[flowId] = job
+	w.idQueue.AddTask(flowId)
 	return flowId
 }
 
