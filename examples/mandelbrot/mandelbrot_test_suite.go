@@ -23,21 +23,6 @@ func referenceGenerator() [][]bool {
 	return img
 }
 
-func convertToAscii(in [][]bool) string {
-	var output bytes.Buffer
-	for _, row := range in {
-		for _, pixel := range row {
-			if pixel {
-				output.WriteString("*")
-			} else {
-				output.WriteString(" ")
-			}
-		}
-		output.WriteString("\n")
-	}
-	return output.String()
-}
-
 type MandelbrotTestSuite struct {
 	suite.Suite
 	runner func() withtheflow.WorkflowRunner
