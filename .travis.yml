@@ -2,5 +2,5 @@ language: go
 before_install:
   - go get github.com/mattn/goveralls
 script:
-  - $HOME/gopath/bin/goveralls -service=travis-ci
+  - $HOME/gopath/bin/goveralls -service=travis-ci -ignore="mocks/*"
   - go test -cpu 1,2,4 ./...
