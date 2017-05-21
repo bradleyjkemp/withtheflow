@@ -1,7 +1,6 @@
 package mandelbrot
 
 import (
-	"bytes"
 	"github.com/bradleyjkemp/withtheflow"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
