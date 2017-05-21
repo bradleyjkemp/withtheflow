@@ -1,7 +1,6 @@
 package mandelbrot
 
 import (
-	"bytes"
 	"github.com/bradleyjkemp/withtheflow"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -21,21 +20,6 @@ func referenceGenerator() [][]bool {
 	}
 
 	return img
-}
-
-func convertToAscii(in [][]bool) string {
-	var output bytes.Buffer
-	for _, row := range in {
-		for _, pixel := range row {
-			if pixel {
-				output.WriteString("*")
-			} else {
-				output.WriteString(" ")
-			}
-		}
-		output.WriteString("\n")
-	}
-	return output.String()
 }
 
 type MandelbrotTestSuite struct {
